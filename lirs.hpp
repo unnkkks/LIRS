@@ -33,4 +33,4 @@ class cache
 
     std::unordered_map<key_T, element> caсhe_storage;
 
-}
+};
