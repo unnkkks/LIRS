@@ -2,25 +2,25 @@
 #include <stack>
 #include <unordered_map>
 
-class cash
+template <typename key_T, typename page_T>
+class cache
 {
-    enum state
+    enum class state
     {
         lir,
         resident_hir,
         non_resident_hir,
     };
 
-    enum location
+    enum class location
     {
-        in = 1,
-        out = 0,
+        in,
+        out,
     };
 
-    template <typename T>
     struct element
     {
-        T key;
+        key_T key;
         state element_state;
         location element_location;
     };
@@ -28,9 +28,9 @@ class cash
     std::size_t Lhirs;
     std::size_t count_lirs;
     std::size_t Llirs;
-    std::stack<int> lirs_stack;
-    std::list<int> res_hir_collection;
+    std::stack<page_T> lirs_stack;
+    std::list<page_T> res_hir_collection;
 
-    std::unordered_map<T, element<T>> cashe_storage;
+    std::unordered_map<key_T, element> caсhe_storage;
 
 }
