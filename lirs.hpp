@@ -45,11 +45,19 @@ class cache
             elem_hit_the_top(front_elem);
             front_elem = lirs_stack.back();
         }
+        stack_pruning(lirs_stack);
+    }
+
+    void stack_pruning(stack_)
+    {
+        element front_elem;
+        front_elem = stack_.back()
         while(front_elem->element_state == resident_hir or front_elem->element_state = non_resident_hir)
         {
             remove_data_blocks(front_elem);
-            front_elem = lirs_stack.back();
+            front_elem = stack_.back();
         }
+
     }
 
     void elem_hit_the_top(element elem)
@@ -76,21 +84,22 @@ class cache
             remove_data_blocks(front_elem);
             front_elem = lirs_stack.back();
         }
-        while(front_elem->element_state == resident_hir)
+
+        elem_hit_the_top(front_elem);
+
+        if(lirs_stack.contains(front_elem))
         {
-            elem_hit_the_top(front_elem);
             front_elem->element_state = lir;
             front_elem = lirs_stack.back();
-        }
-        while(front_elem->element_state == resident_hir or front_elem->element_state = non_resident_hir)
-        {
-            remove_data_blocks(front_elem);
-            front_elem = lirs_stack.back();
+            resident_HIR_collection.delete(front_elem);
         }
 
-        list_top = resident_HIR_collection.front();
-        resident_HIR_collection.push_back(list_top);
-        lirs_stack.push_front(list_top);
+        stack_pruning(lirs_stack);
+        else
+        {
+            list_top = resident_HIR_collection.front();
+            resident_HIR_collection.push_back(list_top);
+        }
     }
 
     void add_to_res_HIR_collection(element elem)
@@ -99,9 +108,5 @@ class cache
         elem->element_state = resident_hir;
     }
 
-    void access_not_in_LIR_and_HIR_data(element elem);
-    {
-        for (int i = 0, i)
-    }
 
 };
