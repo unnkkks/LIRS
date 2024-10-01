@@ -21,6 +21,7 @@ class cache
     struct element
     {
         key_T key;
+        page_T page;
         state element_state;
         location element_location;
     };
@@ -35,11 +36,72 @@ class cache
 
     std::unordered_map<key_T, element> cache_storage;
 
-};
+    void visit_LIR(element elem)
+    {
+        element front_elem;
+        front_elem = lirs_stack.back();
+        while(front_elem->element_state == lir)
+        {
+            elem_hit_the_top(front_elem);
+            front_elem = lirs_stack.back();
+        }
+        while(front_elem->element_state == resident_hi or front_elem->element_state = non_resident_hir)
+        {
+            remove_data_blocks(front_elem);
+            front_elem = lirs_stack.back();
+        }
+    }
 
-void visit_LIR(struct elem);
-void elem_hit_the_top(struct elem);
-void remove_data_blocks(struct elem);
-void visit_resident_HIR(struct elem);
-void access_not_in_LIR_and_HIR_data(struct elem);
-void visit_non_resident_HIR(struct elem);
+    void elem_hit_the_top(element elem)
+    {
+        lirs_stack.remove(elem);
+        lirs_stack.push_front(elem);
+        //return???
+    }
+    void remove_data_blocks(element elem)
+    {
+        front_elem = lirs_stack.back();
+        lirs_stack.pop_back();
+        front_elem->element_state = out;
+        //return??
+    }
+
+    void visit_resident_HIR(element elem)
+    {
+        element front_elem;
+        front_elem = lirs_stack.back();
+        while(front_elem->element_state != resident_hir)
+        {
+            add_to_res_HIR_collection(front_elem);
+            remove_data_blocks(front_elem);
+            front_elem = lirs_stack.back();
+        }
+        while(front_elem->element_state == resident_hir)
+        {
+            elem_hit_the_top(front_elem);
+            front_elem->element_state = lir;
+            front_elem = lirs_stack.back();
+        }
+        while(front_elem->element_state == resident_hir or front_elem->element_state = non_resident_hir)
+        {
+            remove_data_blocks(front_elem);
+            front_elem = lirs_stack.back();
+        }
+
+        list_top = resident_HIR_collection.front();
+        resident_HIR_collection.push_back(list_top);
+        lirs_stack.push_front(list_top);
+    }
+
+    void add_to_res_HIR_collection(element elem)
+    {
+        resident_HIR_collection.push_back(elem);
+        elem->element_state = resident_hir;
+    }
+
+    void access_not_in_LIR_and_HIR_data(element elem);
+    {
+        
+    }
+
+};
