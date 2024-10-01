@@ -45,7 +45,7 @@ class cache
             elem_hit_the_top(front_elem);
             front_elem = lirs_stack.back();
         }
-        while(front_elem->element_state == resident_hi or front_elem->element_state = non_resident_hir)
+        while(front_elem->element_state == resident_hir or front_elem->element_state = non_resident_hir)
         {
             remove_data_blocks(front_elem);
             front_elem = lirs_stack.back();
@@ -101,7 +101,7 @@ class cache
 
     void access_not_in_LIR_and_HIR_data(element elem);
     {
-        
+        for (int i = 0, i)
     }
 
 };
