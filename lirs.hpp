@@ -36,6 +36,29 @@ class cache
 
     std::unordered_map<key_T, element> cache_storage;
 
+    void lookup_update(key_T key, page_T slow_get_page)
+    {
+        hit = cache_storage.find(key);
+
+        if (hit == cache_storage.end())
+        {
+            if (full())
+            {
+            cache_storage.erase(lirs_stack.back().first);
+            lirs_stack.pop_back();
+            }
+
+        lirs_stack.emplace_front(key, page);
+        cache_storage.emplace(key, lirs_stack.begin());
+        return 0;
+        }
+    }
+
+    page_T slow_get_page(key_T key)
+    {
+        return cache_storage.find(key);
+    }
+
     void visit_LIR(element* elem)
     {
         lirs_stack.push_front(elem);
@@ -44,9 +67,8 @@ class cache
 
     void stack_pruning()
     {
-        element front_elem;
-        front_elem = lirs_stack.front()
-        while(front_elem->element_state == resident_hir or front_elem->element_state = non_resident_hir)
+        element front_elem = lirs_stack.front();
+        while(front_elem->element_state != lir)
         {
             remove_data_blocks();
             front_elem = lirs_stack.front();
