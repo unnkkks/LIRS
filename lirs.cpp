@@ -7,12 +7,9 @@ int main()
 
     std::cin >> cache_len;
 
-    cache LIRS<key_T, page_T>;
+    cache lirs<key_T, page_T>;
 
-    void slow_get_page(key_T key)
-    {
-        return cache_storage.find(key);
-    }
+    page_T slow_get_page(key_T key) {return key;}
 
     if (!(std::cin.good()) || cache_len < 0)
     {
