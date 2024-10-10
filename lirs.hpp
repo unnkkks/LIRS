@@ -37,7 +37,7 @@ class cache
 
     public:
 
-        cache(size_t cache_capacity, slow_get_page page)
+        cache(size_t cache_capacity, page_getter slow_get_page)
         {
             if (cache_capacity > 2)
             {
