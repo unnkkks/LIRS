@@ -1,6 +1,8 @@
 #include <list>
 #include <stack>
 #include <unordered_map>
+#include <cstddef>
+#include <iostream>
 
 template <typename key_T, typename page_T, typename page_getter>
 class cache
@@ -37,7 +39,7 @@ class cache
 
     public:
 
-        cache(size_t cache_capacity, page_getter slow_get_page)
+        cache(std::size_t cache_capacity, page_getter slow_get_page)
         {
             if (cache_capacity > 2)
             {
@@ -46,7 +48,7 @@ class cache
             }
             else if (cache_capacity < 2)
             {
-                std::err << "Incorrect cache capacity";
+                std::cerr << "Incorrect cache capacity\n";
                 throw;
             }
             else
@@ -58,18 +60,42 @@ class cache
 
         bool lookup_update(key_T key)
         {
-            auto hit = cache_storage.find(key);
+            if (cache_storage.find(key) == cache_storage.end())
+            {
+                auto elem = cache_storage.find(key);
+                if (elem->second.element_state == state::lir)
+                {
+                    visit_LIR(elem->second);
+                }
 
-            if (hit == cache_storage.end())
+                else if (elem->second.element_state == state::resident_hir)
+                {
+                    visit_resident_HIR(elem->second);
+                }
+
+                else
+                {
+                    visit_non_resident_HIR(elem->second);
+                }
+
+                return true;
+            }
+
+            else
             {
                 if (full())
                 {
-                    cache_storage.erase(lirs_stack.back().first);
+                    cache_storage.erase(lirs_stack.back().key);
                     lirs_stack.pop_back();
                 }
 
-                lirs_stack.emplace_front(key);
-                cache_storage.emplace(key, lirs_stack.begin());
+                auto elem = cache_storage.find(key);
+                lirs_stack.push_front(elem->second);
+                cache_storage.insert({key, {key, key, state::resident_hir, location::in_stack}});
+
+                renew_hir_cache(elem->second);
+
+                return false;
             }
         }
 
@@ -77,7 +103,33 @@ class cache
 
     private:
 
-        void visit_LIR(element* elem)
+        void renew_hir_cache (element elem)
+        {
+            if (resident_HIR_collection.size() < Lhirs)
+            {
+                resident_HIR_collection.push_front(elem);
+                cache_storage[elem.key].element_location = location::in_list;
+            }
+
+            element first_hir = resident_HIR_collection.back();
+            location is_in_stack = cache_storage[first_hir.key].element_location;
+
+            if (is_in_stack == location::in_stack)
+            {
+                cache_storage[first_hir.key].element_state = state::non_resident_hir;
+            }
+            else
+            {
+                cache_storage.erase(first_hir.key);
+            }
+
+            resident_HIR_collection.pop_back();
+            resident_HIR_collection.push_front(elem);
+            cache_storage[elem.key].element_location = location::in_list;
+        }
+
+
+        void visit_LIR(element elem)
         {
             lirs_stack.push_front(elem);
             stack_pruning();
@@ -86,7 +138,7 @@ class cache
         void stack_pruning()
         {
             element front_elem = lirs_stack.front();
-            while(front_elem->element_state != state::lir)
+            while(front_elem.element_state != state::lir)
             {
                 remove_data_blocks();
                 front_elem = lirs_stack.front();
@@ -98,41 +150,41 @@ class cache
         {
             element front_elem = lirs_stack.front();
             lirs_stack.pop_back();
-            front_elem->element_state = location::out;
+            front_elem.element_location = location::out;
         }
 
-        void visit_resident_HIR(element* elem)
+        void visit_resident_HIR(element elem)
         {
 
-            if (elem->element_location == location::in_stack)
+            if (elem.element_location == location::in_stack)
             {
                 element front_elem = lirs_stack.front();
-                front_elem->element_state = state::lir;
-                resident_HIR_collection.erase(front_elem);
+                front_elem.element_state = state::lir;
+                resident_HIR_collection.erase(lirs_stack.begin());
                 stack_pruning();
             }
             else
             {
                 element list_top = resident_HIR_collection.front();
                 resident_HIR_collection.push_back(list_top);
-                list_top->location = location::in_stack;
+                list_top.element_location = location::in_stack;
             }
         }
 
-        void visit_non_resident_HIR(element* elem)
+        void visit_non_resident_HIR(element& elem)
         {
             element front_elem = resident_HIR_collection.front();
             resident_HIR_collection.pop_front();
-            front_elem->element_state = state::non_resident_hir;
+            front_elem.element_state = state::non_resident_hir;
 
-            if (elem->element_location == location::in_stack)
+            if (elem.element_location == location::in_stack)
             {
-                elem->element_state = state::lir;
+                elem.element_state = state::lir;
                 element stack_bottom = lirs_stack.back();
 
                 resident_HIR_collection.push_back(stack_bottom);
-                stack_bottom->element_state = state::hir;
-                stack_bottom->element_location = location::in_list;
+                stack_bottom.element_state = state::resident_hir;
+                stack_bottom.element_location = location::in_list;
             }
             else
             {

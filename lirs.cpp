@@ -16,12 +16,12 @@ int main()
 
     if (!(std::cin.good()) || cache_len < 0)
     {
-        std::cerr << "Incorrect input of the cache length";
+        std::cerr << "Incorrect input of the cache length\n";
     }
 
     if (!(std::cin.good()) || num_of_elems < 0)
     {
-        std::cerr << "Incorrect input of the number of elements";
+        std::cerr << "Incorrect input of the number of elements\n";
     }
 
     for (int i = 0; i < num_of_elems; i++)
