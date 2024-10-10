@@ -1,15 +1,18 @@
 #include "lirs.hpp"
+#include <iostream>
+
+
+int slow_get_page(int key) {return key;}
 
 int main()
 {
-    size_t cache_capacity = 0;
+    std::size_t cache_capacity = 0;
     int num_of_elems = 0;
+    std::size_t cache_len = 0;
 
     std::cin >> cache_len;
 
-    cache lirs<key_T, page_T>;
-
-    page_T slow_get_page(key_T key) {return key;}
+    cache<int, int> cache{cache_capacity, slow_get_page};
 
     if (!(std::cin.good()) || cache_len < 0)
     {
@@ -23,9 +26,9 @@ int main()
 
     for (int i = 0; i < num_of_elems; i++)
     {
-        key_T key;
+        int key;
         std::cin >> key;
-        lookup_update(key);
+        cache.lookup_update(key, slow_get_page);
     }
 
 }
