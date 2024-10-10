@@ -12,7 +12,7 @@ int main()
 
     std::cin >> cache_len;
 
-    cache<int, int, int> cache{cache_capacity, slow_get_page};
+    cache<int, int, int(&)(int)> cache(cache_capacity, slow_get_page);
 
     if (!(std::cin.good()) || cache_len < 0)
     {
