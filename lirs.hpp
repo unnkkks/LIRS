@@ -2,7 +2,7 @@
 #include <stack>
 #include <unordered_map>
 
-template <typename key_T, typename page_T>
+template <typename key_T, typename page_T, typename page_getter>
 class cache
 {
     enum class state
@@ -56,7 +56,7 @@ class cache
             }
         }
 
-        void lookup_update(key_T key, page_T slow_get_page)
+        bool lookup_update(key_T key)
         {
             auto hit = cache_storage.find(key);
 
@@ -68,7 +68,7 @@ class cache
                     lirs_stack.pop_back();
                 }
 
-                lirs_stack.emplace_front(key, slow_get_page);
+                lirs_stack.emplace_front(key);
                 cache_storage.emplace(key, lirs_stack.begin());
             }
         }

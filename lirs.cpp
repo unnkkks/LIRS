@@ -12,7 +12,7 @@ int main()
 
     std::cin >> cache_len;
 
-    cache<int, int> cache{cache_capacity, slow_get_page};
+    cache<int, int, int> cache{cache_capacity, slow_get_page};
 
     if (!(std::cin.good()) || cache_len < 0)
     {
@@ -28,7 +28,7 @@ int main()
     {
         int key;
         std::cin >> key;
-        cache.lookup_update(key, slow_get_page);
+        cache.lookup_update(key);
     }
 
 }
