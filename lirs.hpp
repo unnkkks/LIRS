@@ -1,20 +1,19 @@
 #include <list>
-#include <stack>
 #include <unordered_map>
 #include <cstddef>
 #include <iostream>
 
 template <typename key_T, typename page_T, typename page_getter>
-class cache
+class lirs
 {
-    enum class state
+    enum class State
     {
         lir,
         resident_hir,
         non_resident_hir,
     };
 
-    enum class location
+    enum class Location
     {
         in_stack,
         in_list,
@@ -25,9 +24,11 @@ class cache
     {
         key_T key;
         page_T page;
-        state element_state;
-        location element_location;
+        State state;
+        Location location;
     };
+
+    page_getter slow_get_page(key_T key) {return key;};
 
     std::size_t Lhirs;
     std::size_t Llirs;
@@ -39,49 +40,29 @@ class cache
 
     public:
 
-        cache(std::size_t cache_capacity, page_getter slow_get_page)
+        lirs(std::size_t cache_capacity, page_getter slow_get_page)
         {
             if (cache_capacity > 2)
             {
                 Lhirs = static_cast<size_t>(cache_capacity * 0.4) ;
                 Llirs = cache_capacity - Lhirs;
             }
-            else if (cache_capacity < 2)
-            {
-                std::cerr << "Incorrect cache capacity\n";
-                throw;
-            }
-            else
+            else if (cache_capacity == 2)
             {
                 Llirs = 1;
                 Lhirs = 1;
+            }
+            else
+            {
+                throw "Incorrect cache capacity";
             }
         }
 
         bool lookup_update(key_T key)
         {
-            if (cache_storage.find(key) == cache_storage.end())
-            {
-                auto elem = cache_storage.find(key);
-                if (elem->second.element_state == state::lir)
-                {
-                    visit_LIR(elem->second);
-                }
+            auto elem = cache_storage.find(key);
 
-                else if (elem->second.element_state == state::resident_hir)
-                {
-                    visit_resident_HIR(elem->second);
-                }
-
-                else
-                {
-                    visit_non_resident_HIR(elem->second);
-                }
-
-                return true;
-            }
-
-            else
+            if (elem == cache_storage.end())
             {
                 if (full())
                 {
@@ -89,13 +70,23 @@ class cache
                     lirs_stack.pop_back();
                 }
 
-                auto elem = cache_storage.find(key);
                 lirs_stack.push_front(elem->second);
-                cache_storage.insert({key, {key, key, state::resident_hir, location::in_stack}});
+                cache_storage.insert({key, {key, key, State::resident_hir, Location::in_stack}});
 
                 renew_hir_cache(elem->second);
 
                 return false;
+            }
+
+            else
+            {
+                State state_of_elem = elem->second.state;
+
+                if (state_of_elem == State::lir) { visit_LIR(elem->second); }
+                else if (state_of_elem == State::resident_hir) { visit_resident_HIR(elem->second); }
+                else { visit_non_resident_HIR(elem->second);}
+
+                return true;
             }
         }
 
@@ -103,20 +94,20 @@ class cache
 
     private:
 
-        void renew_hir_cache (element elem)
+        void renew_hir_cache (const element& elem)
         {
             if (resident_HIR_collection.size() < Lhirs)
             {
                 resident_HIR_collection.push_front(elem);
-                cache_storage[elem.key].element_location = location::in_list;
+                cache_storage[elem.key].location = Location::in_list;
             }
 
-            element first_hir = resident_HIR_collection.back();
-            location is_in_stack = cache_storage[first_hir.key].element_location;
+            element& first_hir = resident_HIR_collection.back();
+            Location is_in_stack = cache_storage[first_hir.key].location;
 
-            if (is_in_stack == location::in_stack)
+            if (is_in_stack == Location::in_stack)
             {
-                cache_storage[first_hir.key].element_state = state::non_resident_hir;
+                cache_storage[first_hir.key].state = State::non_resident_hir;
             }
             else
             {
@@ -125,11 +116,11 @@ class cache
 
             resident_HIR_collection.pop_back();
             resident_HIR_collection.push_front(elem);
-            cache_storage[elem.key].element_location = location::in_list;
+            cache_storage[elem.key].location = Location::in_list;
         }
 
 
-        void visit_LIR(element elem)
+        void visit_LIR(const element& elem)
         {
             lirs_stack.push_front(elem);
             stack_pruning();
@@ -137,8 +128,8 @@ class cache
 
         void stack_pruning()
         {
-            element front_elem = lirs_stack.front();
-            while(front_elem.element_state != state::lir)
+            element& front_elem = lirs_stack.front();
+            while(front_elem.state != State::lir)
             {
                 remove_data_blocks();
                 front_elem = lirs_stack.front();
@@ -148,43 +139,43 @@ class cache
 
         void remove_data_blocks()
         {
-            element front_elem = lirs_stack.front();
+            element& front_elem = lirs_stack.front();
             lirs_stack.pop_back();
-            front_elem.element_location = location::out;
+            front_elem.location = Location::out;
         }
 
-        void visit_resident_HIR(element elem)
+        void visit_resident_HIR(const element& elem)
         {
 
-            if (elem.element_location == location::in_stack)
+            if (elem.location == Location::in_stack)
             {
-                element front_elem = lirs_stack.front();
-                front_elem.element_state = state::lir;
+                element& front_elem = lirs_stack.front();
+                front_elem.state = State::lir;
                 resident_HIR_collection.erase(lirs_stack.begin());
                 stack_pruning();
             }
             else
             {
-                element list_top = resident_HIR_collection.front();
+                element& list_top = resident_HIR_collection.front();
                 resident_HIR_collection.push_back(list_top);
-                list_top.element_location = location::in_stack;
+                list_top.location = Location::in_stack;
             }
         }
 
-        void visit_non_resident_HIR(element& elem)
+        void visit_non_resident_HIR(const element& elem)
         {
-            element front_elem = resident_HIR_collection.front();
+            element& front_elem = resident_HIR_collection.front();
             resident_HIR_collection.pop_front();
-            front_elem.element_state = state::non_resident_hir;
+            front_elem.state = State::non_resident_hir;
 
-            if (elem.element_location == location::in_stack)
+            if (elem.location == Location::in_stack)
             {
-                elem.element_state = state::lir;
-                element stack_bottom = lirs_stack.back();
+                elem.state = State::lir;
+                element& stack_bottom = lirs_stack.back();
 
                 resident_HIR_collection.push_back(stack_bottom);
-                stack_bottom.element_state = state::resident_hir;
-                stack_bottom.element_location = location::in_list;
+                stack_bottom.state = State::resident_hir;
+                stack_bottom.location = Location::in_list;
             }
             else
             {
