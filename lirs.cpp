@@ -25,7 +25,7 @@ int main()
         return 1;
     }
 
-    lirs<int, int, int(&)(int)> cache(cache_len, slow_get_page);
+    lirs<int, int, int(*)(int)> cache(cache_len, slow_get_page);
 
     for (int i = 0; i < num_of_elems; i++)
     {

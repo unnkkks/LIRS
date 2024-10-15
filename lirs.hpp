@@ -28,7 +28,6 @@ class lirs
         Location location;
     };
 
-    page_getter slow_get_page(key_T key) {return key;};
 
     std::size_t Lhirs;
     std::size_t Llirs;
@@ -39,6 +38,8 @@ class lirs
     std::unordered_map<key_T, element> cache_storage;
 
     public:
+
+        page_getter slow_get_page;
 
         lirs(std::size_t cache_capacity, page_getter slow_get_page)
         {
@@ -54,11 +55,11 @@ class lirs
             }
             else
             {
-                throw "Incorrect cache capacity";
+                throw std::invalid_argument{"Incorrect cache capacity"};
             }
         }
 
-        bool lookup_update(key_T key)
+        bool lookup_update(const key_T& key)
         {
             auto elem = cache_storage.find(key);
 
@@ -71,7 +72,7 @@ class lirs
                 }
 
                 lirs_stack.push_front(elem->second);
-                cache_storage.insert({key, {key, key, State::resident_hir, Location::in_stack}});
+                cache_storage.try_emplace(key, elem->second);
 
                 renew_hir_cache(elem->second);
 
@@ -82,15 +83,19 @@ class lirs
             {
                 State state_of_elem = elem->second.state;
 
-                if (state_of_elem == State::lir) { visit_LIR(elem->second); }
-                else if (state_of_elem == State::resident_hir) { visit_resident_HIR(elem->second); }
-                else { visit_non_resident_HIR(elem->second);}
+                if (state_of_elem == State::lir) {
+                    visit_LIR(elem->second);
+                } else if (state_of_elem == State::resident_hir) {
+                    visit_resident_HIR(elem->second);
+                } else {
+                    visit_non_resident_HIR(elem->second);
+                }
 
                 return true;
             }
         }
 
-        bool full() const {return (lirs_stack.size() == Llirs); }
+        bool full() const {return lirs_stack.size() == Llirs; }
 
     private:
 
@@ -106,13 +111,9 @@ class lirs
             Location is_in_stack = cache_storage[first_hir.key].location;
 
             if (is_in_stack == Location::in_stack)
-            {
                 cache_storage[first_hir.key].state = State::non_resident_hir;
-            }
             else
-            {
                 cache_storage.erase(first_hir.key);
-            }
 
             resident_HIR_collection.pop_back();
             resident_HIR_collection.push_front(elem);
@@ -128,20 +129,19 @@ class lirs
 
         void stack_pruning()
         {
-            element& front_elem = lirs_stack.front();
+            element& front_elem = lirs_stack.back();
             while(front_elem.state != State::lir)
             {
                 remove_data_blocks();
-                front_elem = lirs_stack.front();
+                front_elem = lirs_stack.back();
             }
 
         }
 
         void remove_data_blocks()
         {
-            element& front_elem = lirs_stack.front();
+            Location elem_location = lirs_stack.back().location = Location::out;
             lirs_stack.pop_back();
-            front_elem.location = Location::out;
         }
 
         void visit_resident_HIR(const element& elem)
@@ -162,7 +162,7 @@ class lirs
             }
         }
 
-        void visit_non_resident_HIR(const element& elem)
+        void visit_non_resident_HIR(element& elem)
         {
             element& front_elem = resident_HIR_collection.front();
             resident_HIR_collection.pop_front();
