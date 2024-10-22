@@ -2,6 +2,8 @@
 #include <unordered_map>
 #include <cstddef>
 #include <iostream>
+#include <stdexcept>
+#include <algorithm>
 
 template <typename key_T, typename page_T, typename page_getter>
 class lirs
@@ -37,9 +39,10 @@ class lirs
 
     std::unordered_map<key_T, element> cache_storage;
 
+    page_getter slow_get_page(const key_T&);
+
     public:
 
-        page_getter slow_get_page;
 
         lirs(std::size_t cache_capacity, page_getter slow_get_page)
         {
@@ -78,7 +81,6 @@ class lirs
 
                 return false;
             }
-
             else
             {
                 State state_of_elem = elem->second.state;
@@ -107,13 +109,13 @@ class lirs
                 cache_storage[elem.key].location = Location::in_list;
             }
 
-            element& first_hir = resident_HIR_collection.back();
-            Location is_in_stack = cache_storage[first_hir.key].location;
+            key_T& first_hir_key = resident_HIR_collection.back().key;
+            Location is_in_stack = cache_storage[first_hir_key].location;
 
             if (is_in_stack == Location::in_stack)
-                cache_storage[first_hir.key].state = State::non_resident_hir;
+                cache_storage[first_hir_key].state = State::non_resident_hir;
             else
-                cache_storage.erase(first_hir.key);
+                cache_storage.erase(first_hir_key);
 
             resident_HIR_collection.pop_back();
             resident_HIR_collection.push_front(elem);
@@ -132,26 +134,22 @@ class lirs
             element& front_elem = lirs_stack.back();
             while(front_elem.state != State::lir)
             {
-                remove_data_blocks();
+                Location elem_location = lirs_stack.back().location = Location::out;
+                lirs_stack.pop_back();
                 front_elem = lirs_stack.back();
             }
 
         }
 
-        void remove_data_blocks()
-        {
-            Location elem_location = lirs_stack.back().location = Location::out;
-            lirs_stack.pop_back();
-        }
-
         void visit_resident_HIR(const element& elem)
         {
-
             if (elem.location == Location::in_stack)
             {
                 element& front_elem = lirs_stack.front();
                 front_elem.state = State::lir;
-                resident_HIR_collection.erase(lirs_stack.begin());
+                auto find_front_elem = [] (key_T& key) {return key == front_elem.key};
+                auto front_elem_it = std::find_if(resident_HIR_collection.begin(), resident_HIR_collection.end(), find_front_elem)
+                resident_HIR_collection.erase(front_elem_it);
                 stack_pruning();
             }
             else

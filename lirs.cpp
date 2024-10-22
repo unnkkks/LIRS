@@ -9,7 +9,6 @@ int main()
 
     int num_of_elems = 0;
     std::size_t cache_len = 0;
-    int hits = 0;
 
     std::cin >> cache_len >> num_of_elems;
 
@@ -26,6 +25,7 @@ int main()
     }
 
     lirs<int, int, int(*)(int)> cache(cache_len, slow_get_page);
+    int hits = 0;
 
     for (int i = 0; i < num_of_elems; i++)
     {
@@ -40,7 +40,7 @@ int main()
 
         if (cache.lookup_update(key))
         {
-            hits += 1;
+            hits += cache.lookup_update(key);
         }
     }
 
