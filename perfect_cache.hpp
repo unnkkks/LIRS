@@ -2,75 +2,79 @@
 #include <list>
 #include <deque>
 #include <iterator>
+#include <algorithm>
 
 template <typename key_T, typename page_T, typename page_getter>
 class perfect_cache
 {
-    std::size_t cache_capacity;
-    std::size_t hits;
-    page_getter slow_get_page;
+    std::size_t cache_capacity_;
+    page_getter slow_get_page_;
 
-    std::list<key_T> cache;
-    std::unordered_map<key_T, page_T> cache_storage;
-    std::deque<key_T> requests;
+    std::list<key_T> cache_;
+    std::unordered_map<key_T, page_T> cache_storage_;
+    std::deque<key_T> requests_;
+    using iterator = typename std::vector<requests_>::iterator;
 
      public:
 
+        template<std::forward_iterator Iterator>
+        perfect_cache(size_t capacity, page_getter slow_get_page, Iterator begin, Iterator end):
+            {requests_(begin, end), cache_capacity_(capacity), slow_get_page(slow_get_page_)}
+
         bool lookup_update()
+        {
+            if (cache_storage_.empty()) throw std::cache_miss{"Cache storage is empty"};
+
+            auto key = std::move(requests.front());
+            requests_.pop_front();
+
+            if (cache_storage_.contains(key)) return true;
+
+            auto request_next_occurence = find_next_occurence(key);
+
+            if (request_next_occurence != no_later_occurencies)
             {
-                if (cache_storage.empty()) return false;
-
-                auto key = requests.front();
-                requests.pop_front();
-
-                if (cache_storage.count(key)) return true;
-
-                auto request_next_occurence = find_next_occurence(key);
-
-                if (request_next_occurence != no_later_occurencies)
+                if (full())
                 {
-                    if (full())
-                    {
-                        std::pair<std::iterator, int> candidate_to_remove;
-                        auto candidate_to_remove = find_latest();
+                    auto [iterator, next_occurence] = find_latest();
 
-                        if (candidate_to_remove->second != no_later_occurencies && candidate_to_remove->second < request_next_occurence)
-                            return false;
-                        else
-                            cache_storage.erase(candidate_to_remove->first);
-                    }
-
-                cache_storage.emplace_back(key, slow_get_page(key));
-
+                    if (next_occurence != no_later_occurencies && next_occurence < request_next_occurence)
+                        return false;
+                    else
+                        cache_storage_.erase(iterator);
                 }
 
-                return false;
+            cache_storage_.emplace_back(key, slow_get_page_(key));
+
             }
 
-            bool full() const {return cache.size() == cache_capacity; }
+            return false;
+        }
+
+        bool full() const {return cache_.size() == cache_capacity_; }
 
     private:
 
-        int no_later_occurencies = -1;
+        constexpr no_later_occurencies = -1;
 
         int find_next_occurence(const key_T& key)
         {
-            auto iter = cache_storage.find(key);
+            auto iter = requests_.find(key);
 
 
-            if (iter == cache.storage.end())
+            if (iter == requests_.end())
                 return no_later_occurencies;
             else
-                return static_cast<int>(cache_storage.begin() - iter) + 1;
+                return std::distance(cache_storage_.begin(), iter) + 1;
         }
 
         std::pair<std::iterator, int> find_latest()
         {
             int latest_occurrence = 0;
-            auto iter = cache_storage.begin();
+            auto iter = cache_storage_.begin();
             auto latest_iter = iter;
 
-            for (auto end_iter = cache_storage.end(); iter != end_iter; ++iter)
+            for (auto end_iter = cache_storage_.end(); iter != end_iter; ++iter)
             {
                 int next_occurrence = find_next_occurrence(iter->second);
 

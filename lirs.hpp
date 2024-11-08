@@ -147,8 +147,8 @@ class lirs
             {
                 element& front_elem = lirs_stack.front();
                 front_elem.state = State::lir;
-                auto find_front_elem = [] (key_T& key) {return key == front_elem.key};
-                auto front_elem_it = std::find_if(resident_HIR_collection.begin(), resident_HIR_collection.end(), find_front_elem)
+                auto front_elem_it = std::find_if(resident_HIR_collection.begin(), resident_HIR_collection.end(),
+                                    [this] (element& front_elem) {return front_elem.key == lirs_stack.front().key;});
                 resident_HIR_collection.erase(front_elem_it);
                 stack_pruning();
             }
