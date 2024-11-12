@@ -1,3 +1,6 @@
+#ifndef PERFECT_CACHE
+#define PERFECT_CACHE
+
 #include <unordered_map>
 #include <list>
 #include <deque>
@@ -10,20 +13,22 @@ class perfect_cache
     std::size_t cache_capacity_;
     page_getter slow_get_page_;
 
-    std::list<key_T> cache_;
-    std::unordered_map<key_T, page_T> cache_storage_;
+    using iterator = typename std::vector<page_T>::iterator;
+
+    std::list<page_T> cache_;
+    std::unordered_map<key_T, iterator> cache_storage_;
     std::deque<key_T> requests_;
-    using iterator = typename std::vector<requests_>::iterator;
+
 
      public:
 
         template<std::forward_iterator Iterator>
         perfect_cache(size_t capacity, page_getter slow_get_page, Iterator begin, Iterator end):
-            {requests_(begin, end), cache_capacity_(capacity), slow_get_page(slow_get_page_)}
+            {requests_{begin, end}, cache_capacity_{capacity}, slow_get_page{slow_get_page_}}
 
         bool lookup_update()
         {
-            if (cache_storage_.empty()) throw std::cache_miss{"Cache storage is empty"};
+            if (cache_storage_.empty()) throw "Cache storage is empty";
 
             auto key = std::move(requests.front());
             requests_.pop_front();
@@ -55,7 +60,7 @@ class perfect_cache
 
     private:
 
-        constexpr no_later_occurencies = -1;
+        constexpr int no_later_occurencies = -1;
 
         int find_next_occurence(const key_T& key)
         {
@@ -65,7 +70,7 @@ class perfect_cache
             if (iter == requests_.end())
                 return no_later_occurencies;
             else
-                return std::distance(cache_storage_.begin(), iter) + 1;
+                return std::distance(requests_.begin(), iter) + 1;
         }
 
         std::pair<std::iterator, int> find_latest()
@@ -92,3 +97,5 @@ class perfect_cache
         }
 
 };
+
+#endif
