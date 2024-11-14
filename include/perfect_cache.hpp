@@ -1,6 +1,7 @@
 #ifndef PERFECT_CACHE
 #define PERFECT_CACHE
 
+#include <cstddef>
 #include <unordered_map>
 #include <list>
 #include <deque>
@@ -24,32 +25,32 @@ class perfect_cache
 
         template<std::forward_iterator Iterator>
         perfect_cache(size_t capacity, page_getter slow_get_page, Iterator begin, Iterator end):
-            {requests_{begin, end}, cache_capacity_{capacity}, slow_get_page{slow_get_page_}}
+            cache_capacity_{capacity}, slow_get_page_{slow_get_page}, requests_{begin, end} {}
 
         bool lookup_update()
         {
             if (cache_storage_.empty()) throw "Cache storage is empty";
 
-            auto key = std::move(requests.front());
+            auto key = std::move(requests_.front());
             requests_.pop_front();
 
             if (cache_storage_.contains(key)) return true;
 
-            auto request_next_occurence = find_next_occurence(key);
+            auto request_next_occurrence = find_next_occurrence(key);
 
-            if (request_next_occurence != no_later_occurencies)
+            if (request_next_occurrence != no_later_occurrencies)
             {
                 if (full())
                 {
-                    auto [iterator, next_occurence] = find_latest();
+                    auto [iter, next_occurrence] = find_latest();
 
-                    if (next_occurence != no_later_occurencies && next_occurence < request_next_occurence)
+                    if (next_occurrence != no_later_occurrencies && next_occurrence < request_next_occurrence)
                         return false;
                     else
-                        cache_storage_.erase(iterator);
+                        cache_storage_.erase(iter);
                 }
 
-            cache_storage_.emplace_back(key, slow_get_page_(key));
+            cache_storage_.emplace_hint(cache_storage_.end(), key, slow_get_page_(key));
 
             }
 
@@ -60,20 +61,20 @@ class perfect_cache
 
     private:
 
-        constexpr int no_later_occurencies = -1;
+        static constexpr int no_later_occurrencies = -1;
 
-        int find_next_occurence(const key_T& key)
+        int find_next_occurrence(const key_T& key)
         {
-            auto iter = requests_.find(key);
+            auto iter = std::ranges::find(requests_, key);
 
 
             if (iter == requests_.end())
-                return no_later_occurencies;
+                return no_later_occurrencies;
             else
                 return std::distance(requests_.begin(), iter) + 1;
         }
 
-        std::pair<std::iterator, int> find_latest()
+        std::pair<iterator, int> find_latest()
         {
             int latest_occurrence = 0;
             auto iter = cache_storage_.begin();
@@ -83,7 +84,7 @@ class perfect_cache
             {
                 int next_occurrence = find_next_occurrence(iter->second);
 
-                if (next_occurrence == no_later_occurencies)
+                if (next_occurrence == no_later_occurrencies)
                     return std::pair{iter, next_occurrence};
                 else if (next_occurrence > latest_occurrence)
                 {
