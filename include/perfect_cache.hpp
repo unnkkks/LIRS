@@ -14,9 +14,9 @@ class perfect_cache
     std::size_t cache_capacity_;
     page_getter slow_get_page_;
 
-    using iterator = typename std::vector<page_T>::iterator;
+    using iterator = typename std::list<page_T>::iterator;
 
-    std::list<page_T> cache_;
+    std::list<page_T> pages_;
     std::unordered_map<key_T, iterator> cache_storage_;
     std::deque<key_T> requests_;
 
@@ -47,17 +47,19 @@ class perfect_cache
                     if (next_occurrence != no_later_occurrencies && next_occurrence < request_next_occurrence)
                         return false;
                     else
+                        pages_.erase(iter->second);
                         cache_storage_.erase(iter);
                 }
 
-            cache_storage_.emplace_hint(cache_storage_.end(), key, slow_get_page_(key));
+            auto iter = pages_.emplace_back(slow_get_page_(key));
+            cache_storage_.emplace(key, iter);
 
             }
 
             return false;
         }
 
-        bool full() const {return cache_.size() == cache_capacity_; }
+        bool full() const {return pages_.size() == cache_capacity_; }
 
     private:
 
@@ -82,7 +84,7 @@ class perfect_cache
 
             for (auto end_iter = cache_storage_.end(); iter != end_iter; ++iter)
             {
-                int next_occurrence = find_next_occurrence(iter->second);
+                int next_occurrence = find_next_occurrence(iter->first);
 
                 if (next_occurrence == no_later_occurrencies)
                     return std::pair{iter, next_occurrence};
