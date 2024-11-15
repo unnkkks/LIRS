@@ -38,21 +38,23 @@ class perfect_cache
 
             auto request_next_occurrence = find_next_occurrence(key);
 
-            if (request_next_occurrence != no_later_occurrencies)
+            if (request_next_occurrence != no_later_occurrences)
             {
                 if (full())
                 {
                     auto [iter, next_occurrence] = find_latest();
 
-                    if (next_occurrence != no_later_occurrencies && next_occurrence < request_next_occurrence)
+                    if (next_occurrence != no_later_occurrences && next_occurrence < request_next_occurrence)
                         return false;
                     else
+                    {
                         pages_.erase(iter->second);
                         cache_storage_.erase(iter);
+                    }
                 }
 
-            auto iter = pages_.emplace_back(slow_get_page_(key));
-            cache_storage_.emplace(key, iter);
+            pages_.emplace_back(slow_get_page_(key));
+            cache_storage_.emplace(key, std::prev(pages_.end()));
 
             }
 
@@ -63,7 +65,7 @@ class perfect_cache
 
     private:
 
-        static constexpr int no_later_occurrencies = -1;
+        static constexpr int no_later_occurrences = -1;
 
         int find_next_occurrence(const key_T& key)
         {
@@ -71,12 +73,12 @@ class perfect_cache
 
 
             if (iter == requests_.end())
-                return no_later_occurrencies;
+                return no_later_occurrences;
             else
                 return std::distance(requests_.begin(), iter) + 1;
         }
 
-        std::pair<iterator, int> find_latest()
+        std::pair<typename std::unordered_map<key_T, iterator>::iterator, int> find_latest()
         {
             int latest_occurrence = 0;
             auto iter = cache_storage_.begin();
@@ -86,7 +88,7 @@ class perfect_cache
             {
                 int next_occurrence = find_next_occurrence(iter->first);
 
-                if (next_occurrence == no_later_occurrencies)
+                if (next_occurrence == no_later_occurrences)
                     return std::pair{iter, next_occurrence};
                 else if (next_occurrence > latest_occurrence)
                 {
