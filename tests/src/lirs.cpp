@@ -38,12 +38,10 @@ int main()
             return 1;
         }
 
-        if (cache.lookup_update(key))
-        {
-            hits += cache.lookup_update(key);
-        }
+        hits += cache.lookup_update(key);
+
     }
 
-    std::cout << "Number of hits:" << hits << std::endl;
+    std::cout << hits << std::endl;
 
 }

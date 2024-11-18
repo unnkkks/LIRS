@@ -46,6 +46,6 @@ int main()
         hits += cache.lookup_update();
     }
 
-    std::cout << "Number of hits:" << hits << std::endl;
+    std::cout << hits << std::endl;
 
 }
