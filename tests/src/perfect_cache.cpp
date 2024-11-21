@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstddef>
 #include <vector>
+#include <iostream>
 
 int slow_get_page(int key) {return key;}
 
@@ -32,7 +33,7 @@ int main()
         std::cin >> key;
         if (!std::cin.good())
         {
-            std::cerr << "Incorrect input of the key";
+            std::cerr << "Incorrect input of the key\n";
             return 1;
         }
         elements.push_back(key);

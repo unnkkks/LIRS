@@ -28,6 +28,11 @@ class lirs
         page_T page;
         State state;
         Location location;
+
+        bool operator==(const element& other) const
+        {
+            return key == other.key;
+        }
     };
 
 
@@ -39,7 +44,7 @@ class lirs
 
     std::unordered_map<key_T, element> cache_storage;
 
-    page_getter slow_get_page(const key_T&);
+    page_getter slow_get_page;
 
     public:
 
@@ -70,14 +75,22 @@ class lirs
             {
                 if (full())
                 {
-                    cache_storage.erase(lirs_stack.back().key);
+                    auto it = lirs_stack.end();
+                    --it;
+                    if (it != lirs_stack.end()) {
+                        lirs_stack.erase(it);
+                    } else {
+                        std::cerr << "Element not found in lirs_stack!\n";
+                    }
+                    //cache_storage.erase(it->key);
                     lirs_stack.pop_back();
                 }
 
-                lirs_stack.push_front(elem->second);
-                cache_storage.try_emplace(key, elem->second);
-
-                renew_hir_cache(elem->second);
+                page_T new_page = slow_get_page(key);
+                element new_elem{key, new_page, State::lir, Location::in_stack};
+                lirs_stack.push_front(new_elem);
+                cache_storage.emplace(key, new_elem);
+                renew_hir_cache(new_elem);
 
                 return false;
             }
@@ -97,27 +110,27 @@ class lirs
             }
         }
 
-        bool full() const {return lirs_stack.size() == Llirs; }
+        bool full() const {return lirs_stack.size() >= Llirs; }
 
     private:
 
         void renew_hir_cache (const element& elem)
         {
-            if (resident_HIR_collection.size() < Lhirs)
-            {
-                resident_HIR_collection.push_front(elem);
-                cache_storage[elem.key].location = Location::in_list;
+            if (resident_HIR_collection.size() < Lhirs) {
+            resident_HIR_collection.push_front(elem);
+            cache_storage[elem.key].location = Location::in_list;
+            } else {
+            auto it = resident_HIR_collection.end();
+            --it;
+            if (it != resident_HIR_collection.end()) {
+                    resident_HIR_collection.erase(it);
+                } else {
+                        std::cerr << "Element not found in resident_HIR_collection!\n";
+                }
+            cache_storage[it->key].state = State::non_resident_hir;
+            resident_HIR_collection.pop_back();
             }
 
-            key_T& first_hir_key = resident_HIR_collection.back().key;
-            Location is_in_stack = cache_storage[first_hir_key].location;
-
-            if (is_in_stack == Location::in_stack)
-                cache_storage[first_hir_key].state = State::non_resident_hir;
-            else
-                cache_storage.erase(first_hir_key);
-
-            resident_HIR_collection.pop_back();
             resident_HIR_collection.push_front(elem);
             cache_storage[elem.key].location = Location::in_list;
         }
@@ -125,18 +138,18 @@ class lirs
 
         void visit_LIR(const element& elem)
         {
+            lirs_stack.remove(elem);
             lirs_stack.push_front(elem);
             stack_pruning();
         }
 
         void stack_pruning()
         {
-            element& front_elem = lirs_stack.back();
-            while(front_elem.state != State::lir)
+            while (!lirs_stack.empty() && lirs_stack.back().state != State::lir)
             {
-                Location elem_location = lirs_stack.back().location = Location::out;
-                lirs_stack.pop_back();
-                front_elem = lirs_stack.back();
+            element& back_elem = lirs_stack.back();
+            back_elem.location = Location::out;
+            lirs_stack.pop_back();
             }
 
         }
@@ -149,7 +162,13 @@ class lirs
                 front_elem.state = State::lir;
                 auto front_elem_it = std::find_if(resident_HIR_collection.begin(), resident_HIR_collection.end(),
                                     [this] (element& front_elem) {return front_elem.key == lirs_stack.front().key;});
-                resident_HIR_collection.erase(front_elem_it);
+
+                if (front_elem_it != resident_HIR_collection.end()) {
+                    resident_HIR_collection.erase(front_elem_it);
+                } else {
+                        std::cerr << "Element not found in resident_HIR_collection!\n";
+                }
+                //resident_HIR_collection.erase(front_elem_it);
                 stack_pruning();
             }
             else

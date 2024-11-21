@@ -27,7 +27,7 @@ int main()
     lirs<int, int, int(*)(int)> cache(cache_len, slow_get_page);
     std::size_t hits = 0;
 
-    for (int i = 0; i < num_of_elems; i++)
+    for (int i = 0; i < num_of_elems; ++i)
     {
         int key;
         std::cin >> key;

@@ -7,6 +7,7 @@
 #include <deque>
 #include <iterator>
 #include <algorithm>
+#include <iostream>
 
 template <typename key_T, typename page_T, typename page_getter>
 class perfect_cache
@@ -25,11 +26,17 @@ class perfect_cache
 
         template<std::forward_iterator Iterator>
         perfect_cache(size_t capacity, page_getter slow_get_page, Iterator begin, Iterator end):
-            cache_capacity_{capacity}, slow_get_page_{slow_get_page}, requests_{begin, end} {}
+            cache_capacity_{capacity}, slow_get_page_{slow_get_page}, requests_{begin, end}
+            {
+                for (size_t i = 0; i < std::min(capacity, requests_.size()); ++i){
+                    pages_.emplace_back(slow_get_page_(requests_[i]));
+                    cache_storage_.emplace(requests_[i], std::prev(pages_.end()));}
+            }
 
         bool lookup_update()
         {
-            if (cache_storage_.empty()) throw "Cache storage is empty";
+            if (requests_.empty()) {return false;}
+            if (cache_storage_.empty()) throw std::runtime_error("Cache storage is empty");
 
             auto key = std::move(requests_.front());
             requests_.pop_front();

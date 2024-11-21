@@ -2,59 +2,66 @@ import subprocess
 import os
 import re
 
-test_files_path = "/mnt/c/c++/vladimirov_course/tests/end2end"
+def run_test(algorithm_binary, test_file_path):
+    try:
+        result = subprocess.run(
+            [algorithm_binary, test_file_path],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        )
+        output = result.stdout.strip()
+        match = re.search(r"Hits:\s*(\d+)", output)
+        if match:
+            return int(match.group(1))
+        else:
+            return -1
 
-lirs_cpp_path = "/mnt/c/c++/vladimirov_course/tests/src/lirs.cpp"
-perfect_cache_cpp_path = "/mnt/c/c++/vladimirov_course/tests/src/perfect_cache.cpp"
-
-def run_test(algorithm_path, test_file_path):
-
-  process = subprocess.run(
-    ["./a.out", algorithm_path, test_file_path],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    cwd=os.path.dirname(algorithm_path)
-  )
-
-  output = process.stdout.decode("utf-8")
-  match = re.search(r"Hits: (\d+)", output)
-  if match:
-    return int(match.group(1))
-  else:
-    return 0
-
-def compile_cpp(cpp_file_path):
-  process = subprocess.run(
-    ["g++", "-o", "a.out", cpp_file_path],
-    cwd=os.path.dirname(cpp_file_path)
-  )
-  return process.returncode == 0
+    except subprocess.CalledProcessError as e:
+        print(f"Error running {algorithm_binary} on {test_file_path}: Return code {e.returncode}, {e.stderr}")
+        return -1
+    except subprocess.TimeoutExpired:
+        print(f"Timeout running {algorithm_binary} on {test_file_path}")
+        return -1
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return -1
 
 
-algorithms = {
-  "LIRS": lirs_cpp_path,
-  "Perfect Cache": perfect_cache_cpp_path
-}
+def run_tests(lirs_binary, perfect_cache_binary, test_files_dir):
+    test_files = [
+        os.path.join(test_files_dir, f)
+        for f in os.listdir(test_files_dir)
+        if os.path.isfile(os.path.join(test_files_dir, f))
+    ]
+
+    results = {
+        "lirs": {},
+        "perfect_cache": {},
+    }
+
+    for test_file in test_files:
+        results["lirs"][test_file] = run_test(lirs_binary, test_file)
+        results["perfect_cache"][test_file] = run_test(perfect_cache_binary, test_file)
+
+    return results
 
 
-results = {}
+def main():
+    test_files_path = "/mnt/c/c++/vladimirov_course/tests/end2end"
 
-for algorithm_name, algorithm_path in algorithms.items():
-  if compile_cpp(algorithm_path):
-    results[algorithm_name] = {}
-  else:
-    print(f"Ошибка компиляции алгоритма {algorithm_name}")
+    lirs_path = "/mnt/c/c++/vladimirov_course/build/tests/lirs"
+    perfect_cache_path = "/mnt/c/c++/vladimirov_course/build/tests/perfect_cache"
 
-for test_file in os.listdir(test_files_path):
-  test_file_path = os.path.join(test_files_path, test_file)
-  if os.path.isfile(test_file_path):
-    for algorithm_name, algorithm_path in algorithms.items():
-      if algorithm_name in results:
-        hits = run_test(algorithm_path, test_file_path)
-        results[algorithm_name][test_file] = hits
+    all_results = run_tests(lirs_path, perfect_cache_path, test_files_path)
 
-print("Результаты тестов:")
-for algorithm_name, algorithm_results in results.items():
-  print(f"\n{algorithm_name}:")
-  for test_file, hits in algorithm_results.items():
-    print(f" {test_file}: {hits} попаданий")
+    print("Test Results:")
+    for algorithm, results_dict in all_results.items():
+        print(f"\nAlgorithm: {algorithm}")
+        for test_file, hits in results_dict.items():
+            print(f"  {test_file}: Hits = {hits if hits != -1 else 'Error'}")
+
+if __name__ == "__main__":
+    main()
+
