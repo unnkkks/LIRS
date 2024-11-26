@@ -1,67 +1,39 @@
 import subprocess
 import os
-import re
-
-def run_test(algorithm_binary, test_file_path):
-    try:
-        result = subprocess.run(
-            [algorithm_binary, test_file_path],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True,
-        )
-        output = result.stdout.strip()
-        match = re.search(r"Hits:\s*(\d+)", output)
-        if match:
-            return int(match.group(1))
-        else:
-            return -1
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error running {algorithm_binary} on {test_file_path}: Return code {e.returncode}, {e.stderr}")
-        return -1
-    except subprocess.TimeoutExpired:
-        print(f"Timeout running {algorithm_binary} on {test_file_path}")
-        return -1
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return -1
 
 
-def run_tests(lirs_binary, perfect_cache_binary, test_files_dir):
-    test_files = [
-        os.path.join(test_files_dir, f)
-        for f in os.listdir(test_files_dir)
-        if os.path.isfile(os.path.join(test_files_dir, f))
-    ]
-
-    results = {
-        "lirs": {},
-        "perfect_cache": {},
-    }
-
-    for test_file in test_files:
-        results["lirs"][test_file] = run_test(lirs_binary, test_file)
-        results["perfect_cache"][test_file] = run_test(perfect_cache_binary, test_file)
-
-    return results
+LIRS_FILE_PATH: str = "/mnt/c/c++/vladimirov_course/build/tests/lirs"
+PERFECT_CACHE_FILE_PATH: str = "/mnt/c/c++/vladimirov_course/build/tests/perfect_cache"
+TEST_DIRECTORY: str = "/mnt/c/c++/vladimirov_course/tests/end2end"
+LIRS_OUTPUT_FILE_PATH: str = "lirs_results.txt"
+PERFECT_CACHE_OUTPUT_FILE_PATH: str = "perfect_cache_results.txt"
 
 
-def main():
-    test_files_path = "/mnt/c/c++/vladimirov_course/tests/end2end"
+def run_tests(binary_path: str, test_dir: str, output_file: str) -> None:
+    with open(output_file, "w") as outfile:
+        for filename in os.listdir(test_dir):
+            test_filepath = os.path.join(test_dir, filename)
+            try:
+                with open(test_filepath, "r") as testfile:
+                    lines = testfile.readlines()
+                    capacity, num_keys = map(int, lines[0].strip().split())
+                    outfile.write(f"Test file: {filename} (Capacity: {capacity}, Keys: {num_keys})\n")
 
-    lirs_path = "/mnt/c/c++/vladimirov_course/build/tests/lirs"
-    perfect_cache_path = "/mnt/c/c++/vladimirov_course/build/tests/perfect_cache"
+                    print(f"Current test '{filename}' in process...")
+                    result = subprocess.run([binary_path], input='\n'.join(lines), text=True, capture_output=True)
+                    outfile.write(f"  Result: {result.stdout}\n")
+                    outfile.flush()
+                    print(f"Test '{filename}' end.\n")
+            except Exception as exc:
+                print(f"Error with '{filename}': {exc}")
 
-    all_results = run_tests(lirs_path, perfect_cache_path, test_files_path)
 
-    print("Test Results:")
-    for algorithm, results_dict in all_results.items():
-        print(f"\nAlgorithm: {algorithm}")
-        for test_file, hits in results_dict.items():
-            print(f"  {test_file}: Hits = {hits if hits != -1 else 'Error'}")
+def main() -> None:
+    run_tests(LIRS_FILE_PATH, TEST_DIRECTORY, LIRS_OUTPUT_FILE_PATH)
+    run_tests(PERFECT_CACHE_FILE_PATH, TEST_DIRECTORY, PERFECT_CACHE_OUTPUT_FILE_PATH)
+
+    print(f"Results written to {LIRS_OUTPUT_FILE_PATH} and {PERFECT_CACHE_OUTPUT_FILE_PATH}")
+
 
 if __name__ == "__main__":
     main()
-

@@ -44,12 +44,12 @@ class lirs
 
     std::unordered_map<key_T, element> cache_storage;
 
-    page_getter slow_get_page;
+    page_getter slow_get_page_;
 
     public:
 
 
-        lirs(std::size_t cache_capacity, page_getter slow_get_page)
+        lirs(std::size_t cache_capacity, page_getter slow_get_page): slow_get_page_{slow_get_page}
         {
             if (cache_capacity > 2)
             {
@@ -65,6 +65,7 @@ class lirs
             {
                 throw std::invalid_argument{"Incorrect cache capacity"};
             }
+
         }
 
         bool lookup_update(const key_T& key)
@@ -77,18 +78,12 @@ class lirs
                 {
                     auto it = lirs_stack.end();
                     --it;
-                    if (it != lirs_stack.end()) {
-                        lirs_stack.erase(it);
-                    } else {
-                        std::cerr << "Element not found in lirs_stack!\n";
-                    }
-                    //cache_storage.erase(it->key);
+                    cache_storage.erase(it->key);
                     lirs_stack.pop_back();
                 }
 
-                page_T new_page = slow_get_page(key);
-                element new_elem{key, new_page, State::lir, Location::in_stack};
-                lirs_stack.push_front(new_elem);
+                element new_elem{key, slow_get_page_(key), State::lir, Location::in_stack};
+                lirs_stack.emplace_front(new_elem);
                 cache_storage.emplace(key, new_elem);
                 renew_hir_cache(new_elem);
 
@@ -119,20 +114,18 @@ class lirs
             if (resident_HIR_collection.size() < Lhirs) {
             resident_HIR_collection.push_front(elem);
             cache_storage[elem.key].location = Location::in_list;
+            cache_storage[elem.key].state = State::resident_hir;
             } else {
-            auto it = resident_HIR_collection.end();
-            --it;
-            if (it != resident_HIR_collection.end()) {
-                    resident_HIR_collection.erase(it);
-                } else {
-                        std::cerr << "Element not found in resident_HIR_collection!\n";
-                }
-            cache_storage[it->key].state = State::non_resident_hir;
-            resident_HIR_collection.pop_back();
+                if (!resident_HIR_collection.empty()){
+                    element back_elem = resident_HIR_collection.back();
+                    cache_storage[back_elem.key].state = State::non_resident_hir;
+                    resident_HIR_collection.pop_back();
+            }
             }
 
             resident_HIR_collection.push_front(elem);
             cache_storage[elem.key].location = Location::in_list;
+            cache_storage[elem.key].state = State::resident_hir;
         }
 
 
@@ -162,13 +155,7 @@ class lirs
                 front_elem.state = State::lir;
                 auto front_elem_it = std::find_if(resident_HIR_collection.begin(), resident_HIR_collection.end(),
                                     [this] (element& front_elem) {return front_elem.key == lirs_stack.front().key;});
-
-                if (front_elem_it != resident_HIR_collection.end()) {
-                    resident_HIR_collection.erase(front_elem_it);
-                } else {
-                        std::cerr << "Element not found in resident_HIR_collection!\n";
-                }
-                //resident_HIR_collection.erase(front_elem_it);
+                resident_HIR_collection.erase(front_elem_it);
                 stack_pruning();
             }
             else
@@ -181,18 +168,19 @@ class lirs
 
         void visit_non_resident_HIR(element& elem)
         {
-            element& front_elem = resident_HIR_collection.front();
+            element front_elem = resident_HIR_collection.front();
             resident_HIR_collection.pop_front();
             front_elem.state = State::non_resident_hir;
 
             if (elem.location == Location::in_stack)
             {
                 elem.state = State::lir;
-                element& stack_bottom = lirs_stack.back();
+                element stack_bottom = lirs_stack.back();
 
-                resident_HIR_collection.push_back(stack_bottom);
+                lirs_stack.pop_back();
                 stack_bottom.state = State::resident_hir;
                 stack_bottom.location = Location::in_list;
+                resident_HIR_collection.push_back(stack_bottom);
             }
             else
             {

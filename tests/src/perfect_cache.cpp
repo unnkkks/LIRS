@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cstddef>
 #include <vector>
-#include <iostream>
 
 int slow_get_page(int key) {return key;}
 
@@ -12,7 +11,15 @@ int main()
     std::size_t num_of_elems = 0;
     std::size_t cache_len = 0;
 
-    std::cin >> cache_len >> num_of_elems;
+    std::cin >> num_of_elems;
+
+    if (!std::cin.good())
+    {
+        std::cerr << "Incorrect input of the number of the elements\n";
+        return 1;
+    }
+
+    std::cin >> cache_len;
 
     if (!std::cin.good())
     {
@@ -20,18 +27,13 @@ int main()
         return 1;
     }
 
-    if (!std::cin.good())
-    {
-        std::cerr << "Incorrect input of the number of elements\n";
-        return 1;
-    }
-
     std::vector<int> elements;
+    elements.reserve(num_of_elems);
     for (size_t i = 0; i != num_of_elems; ++i)
     {
         int key;
         std::cin >> key;
-        if (!std::cin.good())
+        if (std::cin.fail())
         {
             std::cerr << "Incorrect input of the key\n";
             return 1;

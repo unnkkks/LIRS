@@ -1,4 +1,3 @@
 build/
-lirs
-compilation.log
+*.log
 .vscode

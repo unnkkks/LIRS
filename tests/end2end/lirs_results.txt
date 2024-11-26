@@ -1,0 +1,36 @@
+Test file: test.txt (Capacity: 30, Keys: 1000)
+  Result: 735
+
+Test file: test0.txt (Capacity: 2, Keys: 12)
+  Result: 5
+
+Test file: test_01.txt (Capacity: 1360, Keys: 1470195)
+  Result: 1048336
+
+Test file: test_02.txt (Capacity: 1687, Keys: 1110990)
+  Result: 772846
+
+Test file: test_03.txt (Capacity: 1717, Keys: 1876293)
+  Result: 1341278
+
+Test file: test_04.txt (Capacity: 1755, Keys: 1889365)
+  Result: 1355671
+
+Test file: test_05.txt (Capacity: 1831, Keys: 1087349)
+  Result: 760906
+
+Test file: test_06.txt (Capacity: 1872, Keys: 1061016)
+  Result: 738086
+
+Test file: test_07.txt (Capacity: 1290, Keys: 1542413)
+  Result: 1099160
+
+Test file: test_08.txt (Capacity: 1758, Keys: 1500101)
+  Result: 1064047
+
+Test file: test_09.txt (Capacity: 1888, Keys: 1843907)
+  Result: 1324753
+
+Test file: test_10.txt (Capacity: 1081, Keys: 1173463)
+  Result: 829409
+

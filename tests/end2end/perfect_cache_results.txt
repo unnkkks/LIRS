@@ -1,0 +1,7 @@
+Test file: test.txt (Capacity: 30, Keys: 1000)
+  Result: 685
+
+Test file: test0.txt (Capacity: 2, Keys: 12)
+  Result: 7
+
+Test file: test_01.txt (Capacity: 1360, Keys: 1470195)
